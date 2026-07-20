@@ -470,6 +470,19 @@
           <button class="link-btn" data-add-price>+ Add package</button>
         </div>
         <button class="primary-btn" data-save-settings>Save price list</button>
+
+        <div class="section-label">Backup &amp; restore</div>
+        <div class="card">
+          <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">
+            Save a backup file of all your students, top-ups, and lessons — keep it in
+            iCloud/Google Drive/email. If this phone or browser ever loses your data,
+            import that file to get everything back.
+          </div>
+          <button class="ghost-btn" data-export-data>⬇ Export backup file</button>
+          <div style="height:10px;"></div>
+          <button class="ghost-btn" data-import-data>⬆ Import backup file</button>
+          <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
+        </div>
       </div>
     `;
   }
@@ -755,6 +768,65 @@
         state.settings.prices = newPrices;
         await save('settings', state.settings);
         showToast('Price list saved');
+      };
+    }
+
+    const exportBtn = app.querySelector('[data-export-data]');
+    if(exportBtn){
+      exportBtn.onclick = ()=>{
+        const backup = {
+          type: 'swim-tracker-backup',
+          exportedAt: new Date().toISOString(),
+          students: state.students,
+          blocks: state.blocks,
+          settings: state.settings
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = todayISO();
+        a.href = url;
+        a.download = `swim-tracker-backup-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(url), 2000);
+        showToast('Backup file downloaded');
+      };
+    }
+
+    const importBtn = app.querySelector('[data-import-data]');
+    const importInput = app.querySelector('#import-file-input');
+    if(importBtn && importInput){
+      importBtn.onclick = ()=>{ importInput.click(); };
+      importInput.onchange = ()=>{
+        const file = importInput.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e)=>{
+          try{
+            const parsed = JSON.parse(e.target.result);
+            if(!parsed || !Array.isArray(parsed.students) || !Array.isArray(parsed.blocks)){
+              showToast('That file doesn\'t look like a valid backup');
+              return;
+            }
+            const count = parsed.students.length;
+            const ok = confirm(`Import backup from ${parsed.exportedAt ? fmtDate(parsed.exportedAt.slice(0,10)) : 'unknown date'}?\n\nThis will replace all current data with ${count} student(s) from the backup.`);
+            if(!ok) return;
+            state.students = parsed.students;
+            state.blocks = parsed.blocks;
+            if(parsed.settings && parsed.settings.prices) state.settings = parsed.settings;
+            await save('students', state.students);
+            await save('blocks', state.blocks);
+            await save('settings', state.settings);
+            importInput.value = '';
+            render();
+            showToast('Backup restored');
+          }catch(err){
+            showToast('Could not read that file');
+          }
+        };
+        reader.readAsText(file);
       };
     }
   }
