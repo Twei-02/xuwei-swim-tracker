@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Swim Lesson Tracker</title>
+<link rel="icon" href="data:,">
+</head>
+<body style="margin:0;">
+<div id="app"></div>
+<style>
+  :root{
+    --ink:#12242A;
+    --ink-soft:#4B6066;
+    --deep:#0E3B40;
+    --deep-2:#145056;
+    --aqua:#1FB6A6;
+    --aqua-soft:#DCF3EF;
+    --sand:#F6F5F0;
+    --card:#FFFFFF;
+    --line:#E4E1D8;
+    --amber:#E8A93B;
+    --amber-soft:#FCEED2;
+    --coral:#E15B4F;
+    --coral-soft:#FBE1DE;
+    --radius:14px;
+    --shadow: 0 1px 2px rgba(14,59,64,0.06), 0 6px 20px rgba(14,59,64,0.07);
+  }
+  *{box-sizing:border-box;}
+  #app{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:var(--sand);
+    min-height:100vh;
+    max-width:520px;
+    margin:0 auto;
+    padding-bottom:100px;
+    position:relative;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces',Georgia,serif;
+    letter-spacing:-0.01em;
+  }
+  .topbar{
+    background:linear-gradient(160deg,var(--deep) 0%, var(--deep-2) 100%);
+    color:#fff;
+    padding:22px 20px 34px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-1px;
+    height:18px;
+    background:var(--sand);
+    border-radius:50% 50% 0 0 / 100% 100% 0 0;
+    transform:scaleX(1.5);
+  }
+  .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .topbar h1{font-size:26px;font-weight:600;margin:0;color:#fff;}
+  .topbar .sub{font-size:12.5px;color:#BFE4DF;margin-top:4px;font-family:'Inter',sans-serif;}
+  .icon-btn{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    color:#fff;
+    width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px; cursor:pointer;
+  }
+  .icon-btn:active{background:rgba(255,255,255,0.22);}
+  .content{padding:0 16px; margin-top:-14px; position:relative; z-index:1;}
+  .searchbar{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 14px;
+    font-size:14px;
+    display:flex; align-items:center; gap:8px;
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+  .searchbar input{border:none;outline:none;font-size:14px;font-family:inherit;flex:1;background:transparent;color:var(--ink);}
+  .section-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--ink-soft); font-weight:600; margin:18px 4px 8px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:15px 16px;
+    margin-bottom:12px;
+  }
+  .student-card{display:flex; align-items:center; gap:12px; cursor:pointer;}
+  .student-card:active{background:#FAFAF7;}
+  .avatar{
+    width:44px;height:44px;border-radius:50%;
+    background:var(--aqua-soft); color:var(--deep);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:16px;
+    flex-shrink:0;
+  }
+  .student-main{flex:1; min-width:0;}
+  .student-name{font-size:16px; font-weight:600; color:var(--ink);}
+  .student-meta{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .dots{display:flex; gap:4px; margin-top:7px;}
+  .dot{width:8px;height:8px;border-radius:50%; background:var(--line);}
+  .dot.filled{background:var(--aqua);}
+  .badge{
+    font-size:11px; font-weight:600; padding:4px 9px; border-radius:20px;
+    white-space:nowrap;
+  }
+  .badge.ok{background:var(--aqua-soft); color:var(--deep-2);}
+  .badge.low{background:var(--amber-soft); color:#8A5E12;}
+  .badge.renew{background:var(--coral-soft); color:#A83A2F;}
+  .badge.none{background:#EEEEE8; color:var(--ink-soft);}
+  .empty{
+    text-align:center; padding:50px 20px; color:var(--ink-soft);
+  }
+  .empty .big{font-size:40px; margin-bottom:8px;}
+  .fab{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    max-width:520px; width:calc(100% - 32px);
+    display:flex; justify-content:flex-end;
+    pointer-events:none;
+  }
+  .fab button{
+    pointer-events:auto;
+    background:var(--deep); color:#fff; border:none;
+    width:56px;height:56px;border-radius:50%;
+    font-size:26px; box-shadow:0 6px 18px rgba(14,59,64,0.35);
+    cursor:pointer;
+  }
+  .fab button:active{background:var(--deep-2);}
+
+  /* Detail view */
+  .back-row{display:flex; align-items:center; gap:10px; margin-bottom:2px;}
+  .detail-name{font-size:24px; font-weight:600; color:#fff;}
+  .detail-sub{font-size:12.5px; color:#BFE4DF; margin-top:3px;}
+  .info-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-top:14px;
+  }
+  .info-item{font-size:12.5px;}
+  .info-item .lbl{color:var(--ink-soft); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;}
+  .info-item .val{color:var(--ink); margin-top:2px; font-size:13.5px;}
+  .block-card{margin-bottom:14px;}
+  .block-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .block-pkg{font-size:14.5px; font-weight:600;}
+  .block-date{font-size:11.5px; color:var(--ink-soft); margin-top:1px;}
+  .block-amount{font-size:14.5px; font-weight:600; color:var(--deep-2);}
+  .lesson-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .lesson-chip{
+    flex:1; min-width:64px;
+    border:1.5px dashed var(--line);
+    border-radius:10px; padding:8px 6px; text-align:center;
+    font-size:11px; color:var(--ink-soft); cursor:pointer;
+  }
+  .lesson-chip.done{
+    border-style:solid; border-color:var(--aqua); background:var(--aqua-soft); color:var(--deep-2); font-weight:600;
+  }
+  .lesson-chip .n{display:block; font-size:9.5px; opacity:0.7; margin-bottom:2px;}
+  .block-notes{font-size:12.5px; color:var(--ink-soft); margin-top:10px; font-style:italic;}
+  .block-progress{font-size:11.5px; color:var(--ink-soft); margin-top:10px;}
+  .row-between{display:flex; justify-content:space-between; align-items:center;}
+  .link-btn{
+    background:none; border:none; color:var(--deep-2); font-size:13px; font-weight:600;
+    cursor:pointer; padding:6px 2px;
+  }
+  .link-btn.danger{color:var(--coral);}
+  .primary-btn{
+    background:var(--deep); color:#fff; border:none; border-radius:11px;
+    padding:13px; font-size:14.5px; font-weight:600; width:100%; cursor:pointer; font-family:inherit;
+  }
+  .primary-btn:active{background:var(--deep-2);}
+  .ghost-btn{
+    background:var(--card); color:var(--deep); border:1.5px solid var(--line); border-radius:11px;
+    padding:12px; font-size:14px; font-weight:600; width:100%; cursor:pointer; font-family:inherit;
+  }
+
+  /* Modal / sheet */
+  .overlay{
+    position:fixed; inset:0; background:rgba(14,36,42,0.45);
+    display:flex; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .sheet{
+    background:var(--sand); width:100%; max-width:520px;
+    border-radius:20px 20px 0 0; padding:20px 20px 26px;
+    max-height:88vh; overflow-y:auto;
+    animation:slideup .18s ease-out;
+  }
+  @keyframes slideup{from{transform:translateY(24px); opacity:0.6;} to{transform:translateY(0); opacity:1;}}
+  .sheet h2{font-size:19px; margin:0 0 14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%; border:1.5px solid var(--line); border-radius:10px;
+    padding:10px 12px; font-size:14.5px; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  .field textarea{resize:vertical; min-height:60px;}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+  .pkg-choice{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .pkg-opt{
+    border:1.5px solid var(--line); border-radius:10px; padding:9px 12px; font-size:13px;
+    cursor:pointer; background:#fff; flex:1; min-width:90px; text-align:center;
+  }
+  .pkg-opt.sel{border-color:var(--aqua); background:var(--aqua-soft); font-weight:600; color:var(--deep-2);}
+  .sheet-actions{display:flex; gap:10px; margin-top:6px;}
+  .sheet-actions .primary-btn, .sheet-actions .ghost-btn{width:auto; flex:1;}
+  .toast{
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:30px;
+    font-size:13px; z-index:80; box-shadow:var(--shadow);
+  }
+  .price-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .price-row input{flex:1;}
+  .price-row .rm{width:90px;}
+</style>
+<script>
+(function(){
+  const FONT_LINK = document.createElement('link');
+  FONT_LINK.rel='stylesheet';
+  FONT_LINK.href='https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap';
+  document.head.appendChild(FONT_LINK);
+
+  const app = document.getElementById('app');
+  let state = {
+    students: [],
+    blocks: [],
+    settings: { prices: { "1 to 1": 120, "1 to 2": 150, "1 to 3": 180 } },
+    view: { name: 'home', studentId: null },
+    modal: null,
+    toastMsg: null,
+    loaded: false,
+    search: ''
+  };
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso+'T00:00:00');
+    return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  }
+  function fmtMoney(n){
+    if(n===null||n===undefined||n==='') return '—';
+    return 'RM' + Number(n).toFixed(2).replace(/\.00$/,'');
+  }
+  function escapeHtml(s){
+    if(s===undefined||s===null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function save(key, value){
+    try{
+      localStorage.setItem('swimtracker_' + key, JSON.stringify(value));
+    }catch(e){ console.error('Storage error', e); }
+  }
+  async function load(key, fallback){
+    try{
+      const raw = localStorage.getItem('swimtracker_' + key);
+      if(raw) return JSON.parse(raw);
+      return fallback;
+    }catch(e){ return fallback; }
+  }
+
+  async function init(){
+    state.students = await load('students', []);
+    state.blocks = await load('blocks', []);
+    state.settings = await load('settings', state.settings);
+    state.loaded = true;
+    render();
+  }
+
+  function studentBlocks(studentId){
+    return state.blocks.filter(b => b.studentId === studentId)
+      .sort((a,b)=> (b.paymentDate||'').localeCompare(a.paymentDate||''));
+  }
+  function latestBlock(studentId){
+    const bs = studentBlocks(studentId);
+    return bs.length ? bs[0] : null;
+  }
+  function blockStatus(block){
+    if(!block) return {label:'No top-up yet', cls:'none'};
+    const used = block.lessons.filter(Boolean).length;
+    const left = block.qty - used;
+    if(left <= 0) return {label:'Renew now', cls:'renew'};
+    if(left === 1) return {label:'1 lesson left', cls:'low'};
+    return {label: left + ' lessons left', cls:'ok'};
+  }
+
+  function initials(name){
+    return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+  }
+
+  function showToast(msg){
+    state.toastMsg = msg;
+    render();
+    setTimeout(()=>{ state.toastMsg = null; render(); }, 1600);
+  }
+
+  // ---------- RENDER ----------
+  function render(){
+    if(!state.loaded){
+      app.innerHTML = '<div style="padding:60px 20px; text-align:center; color:var(--ink-soft);">Loading…</div>';
+      return;
+    }
+    let html = '';
+    if(state.view.name === 'home') html = renderHome();
+    else if(state.view.name === 'student') html = renderStudent(state.view.studentId);
+    else if(state.view.name === 'settings') html = renderSettings();
+
+    if(state.modal) html += renderModal();
+    if(state.toastMsg) html += `<div class="toast">${escapeHtml(state.toastMsg)}</div>`;
+
+    app.innerHTML = html;
+    attachHandlers();
+  }
+
+  function renderHome(){
+    const q = state.search.trim().toLowerCase();
+    const list = state.students
+      .filter(s => !q || s.name.toLowerCase().includes(q))
+      .sort((a,b)=>a.name.localeCompare(b.name));
+
+    let cards = '';
+    if(state.students.length === 0){
+      cards = `<div class="empty"><div class="big">🏊</div>
+        <div>No students yet.<br>Tap + to add your first student.</div></div>`;
+    } else if(list.length === 0){
+      cards = `<div class="empty">No students match "${escapeHtml(state.search)}"</div>`;
+    } else {
+      cards = list.map(s => {
+        const blk = latestBlock(s.id);
+        const status = blockStatus(blk);
+        const used = blk ? blk.lessons.filter(Boolean).length : 0;
+        const qty = blk ? blk.qty : 0;
+        let dots = '';
+        for(let i=0;i<Math.max(qty,4);i++){
+          dots += `<span class="dot ${i<used?'filled':''}"></span>`;
+        }
+        return `
+        <div class="card student-card" data-open-student="${s.id}">
+          <div class="avatar">${escapeHtml(initials(s.name))}</div>
+          <div class="student-main">
+            <div class="row-between">
+              <div class="student-name">${escapeHtml(s.name)}</div>
+              <span class="badge ${status.cls}">${status.label}</span>
+            </div>
+            <div class="student-meta">${escapeHtml(s.level||'—')}${blk? ' · '+escapeHtml(blk.package):''}</div>
+            ${qty ? `<div class="dots">${dots}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    return `
+      <div class="topbar">
+        <div class="topbar-row">
+          <div>
+            <h1>Swim Tracker</h1>
+            <div class="sub">${state.students.length} student${state.students.length===1?'':'s'}</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <div class="icon-btn" data-open-settings>⚙</div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="searchbar">
+          <span>🔍</span>
+          <input placeholder="Search students" value="${escapeHtml(state.search)}" data-search />
+        </div>
+        <div class="section-label">Students</div>
+        ${cards}
+      </div>
+      <div class="fab"><button data-add-student>+</button></div>
+    `;
+  }
+
+  function renderStudent(studentId){
+    const s = state.students.find(x=>x.id===studentId);
+    if(!s){ state.view = {name:'home'}; return renderHome(); }
+    const blocks = studentBlocks(studentId);
+
+    const blocksHtml = blocks.length ? blocks.map(b => {
+      const used = b.lessons.filter(Boolean).length;
+      let chips = '';
+      for(let i=0;i<b.qty;i++){
+        const d = b.lessons[i];
+        chips += `<div class="lesson-chip ${d?'done':''}" data-toggle-lesson="${b.id}" data-idx="${i}">
+          <span class="n">L${i+1}</span>${d? fmtDate(d).replace(' '+new Date(d+'T00:00:00').getFullYear(),'') : 'Log'}
+        </div>`;
+      }
+      return `
+      <div class="card block-card">
+        <div class="block-head">
+          <div>
+            <div class="block-pkg">${escapeHtml(b.package)}${b.package==='Custom'?'':''}</div>
+            <div class="block-date">Paid ${fmtDate(b.paymentDate)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="block-amount">${fmtMoney(b.amount)}</div>
+            <div class="block-date">${used}/${b.qty} used</div>
+          </div>
+        </div>
+        <div class="lesson-row">${chips}</div>
+        ${b.notes ? `<div class="block-notes">${escapeHtml(b.notes)}</div>` : ''}
+        <div class="row-between" style="margin-top:10px;">
+          <button class="link-btn" data-edit-block="${b.id}">Edit top-up</button>
+          <button class="link-btn danger" data-delete-block="${b.id}">Delete</button>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty">No top-ups logged yet.</div>`;
+
+    return `
+      <div class="topbar">
+        <div class="back-row">
+          <div class="icon-btn" data-go-home>←</div>
+        </div>
+        <div class="detail-name">${escapeHtml(s.name)}</div>
+        <div class="detail-sub">${escapeHtml(s.level||'—')}${s.age? ' · Age '+escapeHtml(String(s.age)):''}</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="lbl">Contact</div><div class="val">${escapeHtml(s.contact||'—')}</div></div>
+          <div class="info-item"><div class="lbl">Progress</div><div class="val">${escapeHtml(s.progress||'—')}</div></div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="row-between" style="margin:16px 4px 4px;">
+          <div class="section-label" style="margin:0;">Top-ups &amp; lessons</div>
+          <button class="link-btn" data-edit-student="${s.id}">Edit details</button>
+        </div>
+        ${blocksHtml}
+        <button class="ghost-btn" data-add-topup="${s.id}" style="margin-top:6px;">+ Add top-up</button>
+        <button class="link-btn danger" data-delete-student="${s.id}" style="margin-top:18px; width:100%; text-align:center;">Delete student</button>
+      </div>
+      <div class="fab"><button data-add-topup="${s.id}">+</button></div>
+    `;
+  }
+
+  function renderSettings(){
+    const prices = state.settings.prices;
+    const rows = Object.keys(prices).map(name => `
+      <div class="price-row">
+        <input value="${escapeHtml(name)}" data-price-name="${escapeHtml(name)}" />
+        <input class="rm" type="number" value="${prices[name]}" data-price-value="${escapeHtml(name)}" />
+        <button class="link-btn danger" data-remove-price="${escapeHtml(name)}">✕</button>
+      </div>
+    `).join('');
+    return `
+      <div class="topbar">
+        <div class="back-row">
+          <div class="icon-btn" data-go-home>←</div>
+        </div>
+        <div class="detail-name">Settings</div>
+        <div class="detail-sub">Price list per lesson</div>
+      </div>
+      <div class="content">
+        <div class="card">
+          ${rows}
+          <button class="link-btn" data-add-price>+ Add package</button>
+        </div>
+        <button class="primary-btn" data-save-settings>Save price list</button>
+      </div>
+    `;
+  }
+
+  function packageOptionsHtml(selected){
+    const names = Object.keys(state.settings.prices).concat(['Custom']);
+    return names.map(n => `<div class="pkg-opt ${n===selected?'sel':''}" data-pick-pkg="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join('');
+  }
+
+  function renderModal(){
+    const m = state.modal;
+    if(m.type === 'addStudent' || m.type === 'editStudent'){
+      const s = m.type==='editStudent' ? state.students.find(x=>x.id===m.id) : {name:'',age:'',contact:'',level:'',progress:''};
+      return `<div class="overlay" data-close-modal>
+        <div class="sheet" data-stop>
+          <h2>${m.type==='editStudent'?'Edit student':'Add student'}</h2>
+          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(s.name)}" placeholder="e.g. Ava Tan"/></div>
+          <div class="field-row">
+            <div class="field"><label>Age</label><input id="f-age" type="number" value="${escapeHtml(s.age||'')}"/></div>
+            <div class="field"><label>Level</label><input id="f-level" value="${escapeHtml(s.level||'')}" placeholder="Beginner"/></div>
+          </div>
+          <div class="field"><label>Parent / contact</label><input id="f-contact" value="${escapeHtml(s.contact||'')}" placeholder="Name, phone number"/></div>
+          <div class="field"><label>Progress notes</label><textarea id="f-progress">${escapeHtml(s.progress||'')}</textarea></div>
+          <div class="sheet-actions">
+            <button class="ghost-btn" data-close-modal>Cancel</button>
+            <button class="primary-btn" data-save-student="${m.type==='editStudent'?m.id:''}">${m.type==='editStudent'?'Save changes':'Add student'}</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if(m.type === 'addTopup' || m.type === 'editTopup'){
+      const b = m.type==='editTopup' ? state.blocks.find(x=>x.id===m.id) :
+        {paymentDate: todayISO(), package: Object.keys(state.settings.prices)[0], qty:4, amount:null, notes:''};
+      const suggested = state.settings.prices[b.package];
+      return `<div class="overlay" data-close-modal>
+        <div class="sheet" data-stop>
+          <h2>${m.type==='editTopup'?'Edit top-up':'Add top-up'}</h2>
+          <div class="field"><label>Payment date</label><input id="f-paydate" type="date" value="${b.paymentDate}"/></div>
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;">Package</label>
+          <div class="pkg-choice" id="f-pkg-choice">${packageOptionsHtml(b.package)}</div>
+          <div class="field-row">
+            <div class="field"><label>Lessons purchased</label><input id="f-qty" type="number" min="1" value="${b.qty}"/></div>
+            <div class="field"><label>Amount paid (RM)</label><input id="f-amount" type="number" step="0.01" value="${b.amount!==null&&b.amount!==undefined? b.amount : (suggested?suggested*b.qty:'')}"/></div>
+          </div>
+          <div class="field"><label>Notes</label><textarea id="f-notes">${escapeHtml(b.notes||'')}</textarea></div>
+          <div class="sheet-actions">
+            <button class="ghost-btn" data-close-modal>Cancel</button>
+            <button class="primary-btn" data-save-topup="${m.type==='editTopup'?m.id:''}" data-student="${m.studentId||(b.studentId||'')}">${m.type==='editTopup'?'Save changes':'Add top-up'}</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if(m.type === 'logLesson'){
+      return `<div class="overlay" data-close-modal>
+        <div class="sheet" data-stop>
+          <h2>Lesson date</h2>
+          <div class="field"><label>Date attended</label><input id="f-lessondate" type="date" value="${m.current||todayISO()}"/></div>
+          <div class="sheet-actions">
+            ${m.current ? `<button class="ghost-btn" data-clear-lesson="${m.blockId}" data-idx="${m.idx}">Clear</button>` : ''}
+            <button class="primary-btn" data-save-lesson="${m.blockId}" data-idx="${m.idx}">Save</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return '';
+  }
+
+  // ---------- HANDLERS ----------
+  function attachHandlers(){
+    app.querySelectorAll('[data-open-student]').forEach(el=>{
+      el.onclick = ()=>{ state.view = {name:'student', studentId: el.dataset.openStudent}; render(); };
+    });
+    const goHome = app.querySelector('[data-go-home]');
+    if(goHome) goHome.onclick = ()=>{ state.view = {name:'home'}; state.search=''; render(); };
+    const openSettings = app.querySelector('[data-open-settings]');
+    if(openSettings) openSettings.onclick = ()=>{ state.view = {name:'settings'}; render(); };
+
+    const searchInput = app.querySelector('[data-search]');
+    if(searchInput){
+      searchInput.oninput = (e)=>{ state.search = e.target.value; render();
+        const el = app.querySelector('[data-search]'); if(el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; } };
+    }
+
+    app.querySelectorAll('[data-add-student]').forEach(el=>{
+      el.onclick = ()=>{ state.modal = {type:'addStudent'}; render(); };
+    });
+    app.querySelectorAll('[data-edit-student]').forEach(el=>{
+      el.onclick = ()=>{ state.modal = {type:'editStudent', id: el.dataset.editStudent}; render(); };
+    });
+    app.querySelectorAll('[data-delete-student]').forEach(el=>{
+      el.onclick = async ()=>{
+        if(!confirm('Delete this student and all their records?')) return;
+        const id = el.dataset.deleteStudent;
+        state.students = state.students.filter(s=>s.id!==id);
+        state.blocks = state.blocks.filter(b=>b.studentId!==id);
+        await save('students', state.students);
+        await save('blocks', state.blocks);
+        state.view = {name:'home'};
+        render();
+        showToast('Student deleted');
+      };
+    });
+
+    app.querySelectorAll('[data-add-topup]').forEach(el=>{
+      el.onclick = ()=>{ state.modal = {type:'addTopup', studentId: el.dataset.addTopup}; render(); };
+    });
+    app.querySelectorAll('[data-edit-block]').forEach(el=>{
+      el.onclick = ()=>{ state.modal = {type:'editTopup', id: el.dataset.editBlock}; render(); };
+    });
+    app.querySelectorAll('[data-delete-block]').forEach(el=>{
+      el.onclick = async ()=>{
+        if(!confirm('Delete this top-up record?')) return;
+        const id = el.dataset.deleteBlock;
+        state.blocks = state.blocks.filter(b=>b.id!==id);
+        await save('blocks', state.blocks);
+        render();
+        showToast('Top-up deleted');
+      };
+    });
+
+    app.querySelectorAll('[data-toggle-lesson]').forEach(el=>{
+      el.onclick = ()=>{
+        const blockId = el.dataset.toggleLesson;
+        const idx = parseInt(el.dataset.idx,10);
+        const b = state.blocks.find(x=>x.id===blockId);
+        state.modal = {type:'logLesson', blockId, idx, current: b.lessons[idx]};
+        render();
+      };
+    });
+
+    const overlay = app.querySelector('.overlay');
+    if(overlay){
+      overlay.onclick = (e)=>{ if(e.target.hasAttribute('data-close-modal')){ state.modal=null; render(); } };
+    }
+    app.querySelectorAll('[data-close-modal]').forEach(el=>{
+      if(el.classList.contains('overlay')) return;
+      el.onclick = ()=>{ state.modal=null; render(); };
+    });
+    const stopEl = app.querySelector('[data-stop]');
+    if(stopEl) stopEl.onclick = (e)=>e.stopPropagation();
+
+    // package choice picking inside modal
+    app.querySelectorAll('[data-pick-pkg]').forEach(el=>{
+      el.onclick = ()=>{
+        app.querySelectorAll('[data-pick-pkg]').forEach(x=>x.classList.remove('sel'));
+        el.classList.add('sel');
+        const pkgName = el.dataset.pickPkg;
+        const qtyEl = app.querySelector('#f-qty');
+        const amountEl = app.querySelector('#f-amount');
+        const price = state.settings.prices[pkgName];
+        if(price && qtyEl && amountEl){
+          amountEl.value = (price * (parseInt(qtyEl.value,10)||1)).toFixed(2);
+        }
+      };
+    });
+    const qtyField = app.querySelector('#f-qty');
+    if(qtyField){
+      qtyField.oninput = ()=>{
+        const sel = app.querySelector('.pkg-opt.sel');
+        if(!sel) return;
+        const price = state.settings.prices[sel.dataset.pickPkg];
+        const amountEl = app.querySelector('#f-amount');
+        if(price && amountEl){ amountEl.value = (price * (parseInt(qtyField.value,10)||1)).toFixed(2); }
+      };
+    }
+
+    const saveStudentBtn = app.querySelector('[data-save-student]');
+    if(saveStudentBtn){
+      saveStudentBtn.onclick = async ()=>{
+        const name = app.querySelector('#f-name').value.trim();
+        if(!name){ showToast('Please enter a name'); return; }
+        const data = {
+          name,
+          age: app.querySelector('#f-age').value,
+          level: app.querySelector('#f-level').value.trim(),
+          contact: app.querySelector('#f-contact').value.trim(),
+          progress: app.querySelector('#f-progress').value.trim(),
+        };
+        const editId = saveStudentBtn.dataset.saveStudent;
+        if(editId){
+          const s = state.students.find(x=>x.id===editId);
+          Object.assign(s, data);
+        } else {
+          state.students.push(Object.assign({id: uid()}, data));
+        }
+        await save('students', state.students);
+        state.modal = null;
+        render();
+        showToast('Saved');
+      };
+    }
+
+    const saveTopupBtn = app.querySelector('[data-save-topup]');
+    if(saveTopupBtn){
+      saveTopupBtn.onclick = async ()=>{
+        const selPkg = app.querySelector('.pkg-opt.sel');
+        const pkgName = selPkg ? selPkg.dataset.pickPkg : Object.keys(state.settings.prices)[0];
+        const qty = parseInt(app.querySelector('#f-qty').value,10) || 1;
+        const amountVal = app.querySelector('#f-amount').value;
+        const data = {
+          paymentDate: app.querySelector('#f-paydate').value || todayISO(),
+          package: pkgName,
+          qty,
+          amount: amountVal===''? null : parseFloat(amountVal),
+          notes: app.querySelector('#f-notes').value.trim(),
+        };
+        const editId = saveTopupBtn.dataset.saveTopup;
+        if(editId){
+          const b = state.blocks.find(x=>x.id===editId);
+          const oldQty = b.lessons.length;
+          Object.assign(b, data);
+          if(qty > oldQty){
+            for(let i=oldQty;i<qty;i++) b.lessons.push(null);
+          } else if(qty < oldQty){
+            b.lessons = b.lessons.slice(0,qty);
+          }
+        } else {
+          const studentId = saveTopupBtn.dataset.student;
+          state.blocks.push(Object.assign({id: uid(), studentId, lessons: new Array(qty).fill(null)}, data));
+        }
+        await save('blocks', state.blocks);
+        state.modal = null;
+        render();
+        showToast('Top-up saved');
+      };
+    }
+
+    const saveLessonBtn = app.querySelector('[data-save-lesson]');
+    if(saveLessonBtn){
+      saveLessonBtn.onclick = async ()=>{
+        const blockId = saveLessonBtn.dataset.saveLesson;
+        const idx = parseInt(saveLessonBtn.dataset.idx,10);
+        const date = app.querySelector('#f-lessondate').value || todayISO();
+        const b = state.blocks.find(x=>x.id===blockId);
+        b.lessons[idx] = date;
+        await save('blocks', state.blocks);
+        state.modal = null;
+        render();
+        showToast('Lesson logged');
+      };
+    }
+    const clearLessonBtn = app.querySelector('[data-clear-lesson]');
+    if(clearLessonBtn){
+      clearLessonBtn.onclick = async ()=>{
+        const blockId = clearLessonBtn.dataset.clearLesson;
+        const idx = parseInt(clearLessonBtn.dataset.idx,10);
+        const b = state.blocks.find(x=>x.id===blockId);
+        b.lessons[idx] = null;
+        await save('blocks', state.blocks);
+        state.modal = null;
+        render();
+        showToast('Cleared');
+      };
+    }
+
+    // Settings
+    app.querySelectorAll('[data-remove-price]').forEach(el=>{
+      el.onclick = ()=>{
+        delete state.settings.prices[el.dataset.removePrice];
+        render();
+      };
+    });
+    const addPriceBtn = app.querySelector('[data-add-price]');
+    if(addPriceBtn){
+      addPriceBtn.onclick = ()=>{
+        let n = 1, name = 'New package';
+        while(state.settings.prices[name]) { n++; name = 'New package ' + n; }
+        state.settings.prices[name] = 0;
+        render();
+      };
+    }
+    const saveSettingsBtn = app.querySelector('[data-save-settings]');
+    if(saveSettingsBtn){
+      saveSettingsBtn.onclick = async ()=>{
+        const newPrices = {};
+        app.querySelectorAll('[data-price-name]').forEach(nameEl=>{
+          const oldName = nameEl.dataset.priceName;
+          const newName = nameEl.value.trim() || oldName;
+          const valEl = app.querySelector(`[data-price-value="${CSS.escape(oldName)}"]`);
+          const val = valEl ? parseFloat(valEl.value)||0 : 0;
+          newPrices[newName] = val;
+        });
+        state.settings.prices = newPrices;
+        await save('settings', state.settings);
+        showToast('Price list saved');
+      };
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
